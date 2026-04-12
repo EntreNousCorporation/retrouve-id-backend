@@ -1,0 +1,7 @@
+target/
+.idea/
+*.iml
+.vscode/
+storage/
+secrets/
+.DS_Store

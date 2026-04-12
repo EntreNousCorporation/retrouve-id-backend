@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: retrouvid-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/retrouvid}
+    username: ${DB_USER:retrouvid}
+    password: ${DB_PASSWORD:retrouvid}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc.time_zone: UTC
+        format_sql: false
+    open-in-view: false
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+server:
+  port: ${SERVER_PORT:8080}
+  servlet:
+    context-path: /
+
+app:
+  onesignal:
+    app-id: ${ONESIGNAL_APP_ID:}
+    rest-api-key: ${ONESIGNAL_REST_API_KEY:}
+  media:
+    storage-path: ${MEDIA_PATH:./storage/media}
+  jwt:
+    secret: ${JWT_SECRET:change-me-please-change-me-please-change-me-please-1234}
+    access-expiration-minutes: 15
+    refresh-expiration-days: 7
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:8080}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html

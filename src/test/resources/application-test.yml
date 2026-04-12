@@ -1,0 +1,21 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:retrouvid;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+  flyway:
+    enabled: false
+
+app:
+  media:
+    storage-path: ./target/test-media
+  jwt:
+    secret: test-secret-test-secret-test-secret-test-secret-12345
+    access-expiration-minutes: 15
+    refresh-expiration-days: 7
+  cors:
+    allowed-origins: http://localhost:3000
