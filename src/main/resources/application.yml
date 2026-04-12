@@ -23,6 +23,11 @@ server:
     context-path: /
 
 app:
+  admin:
+    email: ${ADMIN_EMAIL:}
+    password: ${ADMIN_PASSWORD:}
+    first-name: ${ADMIN_FIRST_NAME:Admin}
+    last-name: ${ADMIN_LAST_NAME:RetrouvID}
   onesignal:
     app-id: ${ONESIGNAL_APP_ID:}
     rest-api-key: ${ONESIGNAL_REST_API_KEY:}
