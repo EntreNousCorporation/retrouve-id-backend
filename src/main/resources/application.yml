@@ -23,6 +23,8 @@ server:
     context-path: /
 
 app:
+  password-reset:
+    expose-token: ${PASSWORD_RESET_EXPOSE_TOKEN:true}
   admin:
     email: ${ADMIN_EMAIL:}
     password: ${ADMIN_PASSWORD:}
