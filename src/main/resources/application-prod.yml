@@ -1,0 +1,35 @@
+# Profile actif via SPRING_PROFILES_ACTIVE=prod
+# Surcharge les défauts du application.yml avec des valeurs conservatrices
+# pour la production.
+
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    baseline-on-migrate: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO
+    org.hibernate.SQL: WARN
+    org.springframework.web: WARN
+
+app:
+  # En prod, ne jamais renvoyer le code/token dans la réponse HTTP.
+  password-reset:
+    expose-token: false
+  otp:
+    expose-code: false

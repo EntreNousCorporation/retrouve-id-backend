@@ -24,8 +24,10 @@ public class MediaController {
     public record UploadResponse(UUID id, String previewUrl, String originalUrl, String contentType, long size) {}
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ApiResponse<UploadResponse> upload(@RequestPart("file") MultipartFile file) {
-        MediaAsset asset = mediaService.upload(CurrentUser.id(), file);
+    public ApiResponse<UploadResponse> upload(
+            @RequestPart("file") MultipartFile file,
+            @RequestParam(value = "blur", defaultValue = "true") boolean blur) {
+        MediaAsset asset = mediaService.upload(CurrentUser.id(), file, blur);
         return ApiResponse.ok(new UploadResponse(
                 asset.getId(),
                 "/api/v1/media/" + asset.getId() + "/preview",

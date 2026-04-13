@@ -5,7 +5,9 @@ import com.retrouvid.modules.admin.repository.RelayPointRepository;
 import com.retrouvid.modules.declaration.entity.Declaration;
 import com.retrouvid.modules.declaration.entity.DeclarationStatus;
 import com.retrouvid.modules.declaration.entity.DeclarationType;
+import com.retrouvid.modules.declaration.entity.DocumentType;
 import com.retrouvid.modules.declaration.repository.DeclarationRepository;
+import org.springframework.data.jpa.domain.Specification;
 import com.retrouvid.modules.matching.entity.MatchStatus;
 import com.retrouvid.modules.matching.repository.MatchRepository;
 import com.retrouvid.modules.user.entity.Role;
@@ -54,25 +56,20 @@ public class AdminController {
     public ApiResponse<DashboardDto> dashboard() {
         long totalUsers = userRepository.count();
         long totalDecl = declarationRepository.count();
-        long active = declarationRepository.findAll().stream()
-                .filter(d -> d.getStatus() == DeclarationStatus.ACTIVE).count();
-        long matched = declarationRepository.findAll().stream()
-                .filter(d -> d.getStatus() == DeclarationStatus.MATCHED).count();
-        long restituted = declarationRepository.findAll().stream()
-                .filter(d -> d.getStatus() == DeclarationStatus.RESTITUTED).count();
-        long pending = matchRepository.findByStatus(MatchStatus.PENDING).size();
-        long confirmed = matchRepository.findByStatus(MatchStatus.CONFIRMED).size();
+        long active = declarationRepository.countByStatus(DeclarationStatus.ACTIVE);
+        long matched = declarationRepository.countByStatus(DeclarationStatus.MATCHED);
+        long restituted = declarationRepository.countByStatus(DeclarationStatus.RESTITUTED);
+        long pending = matchRepository.countByStatus(MatchStatus.PENDING);
+        long confirmed = matchRepository.countByStatus(MatchStatus.CONFIRMED);
 
         Map<String, Long> byType = Map.of(
-                "PERTE", declarationRepository.findAll().stream()
-                        .filter(d -> d.getType() == DeclarationType.PERTE).count(),
-                "DECOUVERTE", declarationRepository.findAll().stream()
-                        .filter(d -> d.getType() == DeclarationType.DECOUVERTE).count()
-        );
-        Map<String, Long> byDoc = declarationRepository.findAll().stream()
-                .collect(java.util.stream.Collectors.groupingBy(
-                        d -> d.getDocumentType().name(),
-                        java.util.stream.Collectors.counting()));
+                "PERTE", declarationRepository.countByType(DeclarationType.PERTE),
+                "DECOUVERTE", declarationRepository.countByType(DeclarationType.DECOUVERTE));
+
+        Map<String, Long> byDoc = declarationRepository.countGroupByDocumentType().stream()
+                .collect(java.util.stream.Collectors.toMap(
+                        row -> ((DocumentType) row[0]).name(),
+                        row -> (Long) row[1]));
 
         return ApiResponse.ok(new DashboardDto(
                 totalUsers, totalDecl, active, matched, restituted,
@@ -96,8 +93,23 @@ public class AdminController {
 
     @GetMapping("/declarations")
     public ApiResponse<PagedResponse<AdminDeclarationDto>> declarations(
+            @RequestParam(required = false) DeclarationStatus status,
+            @RequestParam(required = false) DeclarationType type,
+            @RequestParam(required = false) DocumentType documentType,
+            @RequestParam(required = false) String search,
             @PageableDefault(size = 20) Pageable pageable) {
-        var page = declarationRepository.findAll(pageable).map(AdminDeclarationDto::from);
+        Specification<Declaration> spec = (root, q, cb) -> cb.conjunction();
+        if (status != null) spec = spec.and((r, q, cb) -> cb.equal(r.get("status"), status));
+        if (type != null) spec = spec.and((r, q, cb) -> cb.equal(r.get("type"), type));
+        if (documentType != null) spec = spec.and((r, q, cb) -> cb.equal(r.get("documentType"), documentType));
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
+            Specification<Declaration> s = spec;
+            spec = s.and((r, q, cb) -> cb.or(
+                    cb.like(cb.lower(r.get("ownerName")), like),
+                    cb.like(cb.lower(r.get("city")), like)));
+        }
+        var page = declarationRepository.findAll(spec, pageable).map(AdminDeclarationDto::from);
         return ApiResponse.ok(PagedResponse.of(page));
     }
 
@@ -127,8 +139,23 @@ public class AdminController {
 
     @GetMapping("/users")
     public ApiResponse<PagedResponse<AdminUserDto>> users(
+            @RequestParam(required = false) Role role,
+            @RequestParam(required = false) Boolean verified,
+            @RequestParam(required = false) String search,
             @PageableDefault(size = 20) Pageable pageable) {
-        var page = userRepository.findAll(pageable).map(AdminUserDto::from);
+        Specification<User> spec = (r, q, cb) -> cb.conjunction();
+        if (role != null) spec = spec.and((r, q, cb) -> cb.equal(r.get("role"), role));
+        if (verified != null) spec = spec.and((r, q, cb) -> cb.equal(r.get("verified"), verified));
+        if (search != null && !search.isBlank()) {
+            String like = "%" + search.toLowerCase() + "%";
+            Specification<User> s = spec;
+            spec = s.and((r, q, cb) -> cb.or(
+                    cb.like(cb.lower(cb.coalesce(r.get("email"), "")), like),
+                    cb.like(cb.lower(cb.coalesce(r.get("phone"), "")), like),
+                    cb.like(cb.lower(cb.coalesce(r.get("firstName"), "")), like),
+                    cb.like(cb.lower(cb.coalesce(r.get("lastName"), "")), like)));
+        }
+        var page = userRepository.findAll(spec, pageable).map(AdminUserDto::from);
         return ApiResponse.ok(PagedResponse.of(page));
     }
 

@@ -22,6 +22,7 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider tokenProvider;
+    private final OtpService otpService;
 
     @Transactional
     public AuthResponse register(RegisterRequest req) {
@@ -44,6 +45,9 @@ public class AuthService {
                 .verified(false)
                 .build();
         user = userRepository.save(user);
+        if (user.getEmail() != null && !user.getEmail().isBlank()) {
+            otpService.sendEmailVerification(user);
+        }
         return buildResponse(user);
     }
 

@@ -34,6 +34,11 @@ public class MediaService {
 
     @Transactional
     public MediaAsset upload(UUID ownerId, MultipartFile file) {
+        return upload(ownerId, file, true);
+    }
+
+    @Transactional
+    public MediaAsset upload(UUID ownerId, MultipartFile file, boolean blur) {
         if (file == null || file.isEmpty()) throw ApiException.badRequest("Fichier vide");
         if (file.getSize() > MAX_SIZE) throw ApiException.badRequest("Fichier trop volumineux (max 10 Mo)");
         String type = file.getContentType();
@@ -45,7 +50,7 @@ public class MediaService {
 
         try {
             byte[] original = file.getBytes();
-            byte[] preview = blurService.buildPreview(original, type);
+            byte[] preview = blur ? blurService.buildPreview(original, type) : original;
 
             UUID id = UUID.randomUUID();
             Path base = Paths.get(storagePath);

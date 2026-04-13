@@ -30,4 +30,6 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
     List<Match> findByDeclaration(@Param("declId") UUID declId);
 
     List<Match> findByStatus(MatchStatus status);
+
+    long countByStatus(MatchStatus status);
 }

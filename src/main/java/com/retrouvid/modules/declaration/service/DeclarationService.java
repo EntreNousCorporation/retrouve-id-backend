@@ -122,15 +122,6 @@ public class DeclarationService {
 
     @Transactional(readOnly = true)
     public Page<Declaration> findNearby(double lat, double lon, double radiusKm, Pageable pageable) {
-        double latDelta = radiusKm / 111.0;
-        double lonDelta = radiusKm / (111.0 * Math.cos(Math.toRadians(lat)));
-        Specification<Declaration> spec = (root, q, cb) -> cb.and(
-                cb.isNotNull(root.get("latitude")),
-                cb.isNotNull(root.get("longitude")),
-                cb.between(root.get("latitude"), lat - latDelta, lat + latDelta),
-                cb.between(root.get("longitude"), lon - lonDelta, lon + lonDelta),
-                cb.equal(root.get("status"), DeclarationStatus.ACTIVE)
-        );
-        return declarationRepository.findAll(spec, pageable);
+        return declarationRepository.findNearbyHaversine(lat, lon, radiusKm, pageable);
     }
 }

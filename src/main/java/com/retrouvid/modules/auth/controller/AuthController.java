@@ -5,9 +5,13 @@ import com.retrouvid.modules.auth.dto.LoginRequest;
 import com.retrouvid.modules.auth.dto.RefreshRequest;
 import com.retrouvid.modules.auth.dto.RegisterRequest;
 import com.retrouvid.modules.auth.service.AuthService;
+import com.retrouvid.modules.auth.service.OtpService;
 import com.retrouvid.modules.auth.service.PasswordResetService;
+import com.retrouvid.modules.user.repository.UserRepository;
+import com.retrouvid.shared.exception.ApiException;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import org.springframework.beans.factory.annotation.Value;
 
@@ -24,6 +28,8 @@ public class AuthController {
 
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
+    private final OtpService otpService;
+    private final UserRepository userRepository;
 
     @Value("${app.password-reset.expose-token:true}")
     private boolean exposeToken;
@@ -58,6 +64,25 @@ public class AuthController {
     @PostMapping("/reset-password")
     public ApiResponse<Void> resetPassword(@Valid @RequestBody ResetPasswordRequest req) {
         passwordResetService.reset(req.token(), req.password());
+        return ApiResponse.ok(null);
+    }
+
+    public record SendOtpRequest(@Email @NotBlank String email) {}
+    public record VerifyOtpRequest(
+            @Email @NotBlank String email,
+            @NotBlank @Pattern(regexp = "\\d{6}", message = "Le code doit contenir 6 chiffres") String code) {}
+
+    @PostMapping("/send-otp")
+    public ApiResponse<Map<String, String>> sendOtp(@Valid @RequestBody SendOtpRequest req) {
+        var user = userRepository.findByEmail(req.email())
+                .orElseThrow(() -> ApiException.notFound("Utilisateur introuvable"));
+        String code = otpService.sendEmailVerification(user);
+        return ApiResponse.ok(code != null ? Map.of("code", code) : Map.of());
+    }
+
+    @PostMapping("/verify-otp")
+    public ApiResponse<Void> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
+        otpService.verifyEmail(req.email(), req.code());
         return ApiResponse.ok(null);
     }
 }
