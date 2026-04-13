@@ -3,6 +3,7 @@ package com.retrouvid.modules.user.controller;
 import com.retrouvid.modules.media.service.MediaService;
 import com.retrouvid.modules.user.entity.User;
 import com.retrouvid.modules.user.repository.UserRepository;
+import com.retrouvid.modules.user.service.UserDataExportService;
 import com.retrouvid.security.CurrentUser;
 import com.retrouvid.shared.dto.ApiResponse;
 import com.retrouvid.shared.exception.ApiException;
@@ -24,6 +25,7 @@ public class UserController {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final MediaService mediaService;
+    private final UserDataExportService dataExportService;
 
     public record UserDto(UUID id, String email, String phone, String firstName, String lastName,
                          String profilePhotoUrl, String role, String city, Double latitude, Double longitude) {
@@ -55,6 +57,17 @@ public class UserController {
         if (req.latitude() != null) user.setLatitude(req.latitude());
         if (req.longitude() != null) user.setLongitude(req.longitude());
         return ApiResponse.ok(UserDto.from(user));
+    }
+
+    /**
+     * Export RGPD (art. 15/20) : renvoie toutes les données personnelles de
+     * l'utilisateur sous forme JSON. Le mobile propose le téléchargement.
+     */
+    @GetMapping("/me/export")
+    public ApiResponse<java.util.Map<String, Object>> exportData() {
+        User user = userRepository.findById(CurrentUser.id())
+                .orElseThrow(() -> ApiException.unauthorized("Utilisateur introuvable"));
+        return ApiResponse.ok(dataExportService.export(user));
     }
 
     public record DeleteAccountRequest(@NotBlank String password) {}
