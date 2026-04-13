@@ -15,9 +15,12 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class MediaService {
@@ -89,5 +92,28 @@ public class MediaService {
             throw ApiException.forbidden("Accès au fichier original réservé au propriétaire");
         }
         return Files.readAllBytes(Path.of(asset.getOriginalPath()));
+    }
+
+    /**
+     * Suppression RGPD : efface les fichiers disque de tous les médias
+     * appartenant à un user. La ligne MediaAsset elle-même est supprimée par
+     * la cascade SQL déclenchée par la suppression du user parent.
+     */
+    @Transactional(readOnly = true)
+    public void deleteFilesForOwner(UUID ownerId) {
+        List<MediaAsset> assets = repository.findByOwnerId(ownerId);
+        for (MediaAsset a : assets) {
+            deleteFileQuietly(a.getOriginalPath());
+            deleteFileQuietly(a.getPreviewPath());
+        }
+    }
+
+    private void deleteFileQuietly(String path) {
+        if (path == null || path.isBlank()) return;
+        try {
+            Files.deleteIfExists(Path.of(path));
+        } catch (IOException e) {
+            log.warn("Impossible de supprimer {} : {}", path, e.getMessage());
+        }
     }
 }
