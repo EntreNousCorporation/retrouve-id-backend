@@ -24,11 +24,7 @@ class MatchingAndMessagingIntegrationTest {
     @Autowired ObjectMapper om;
 
     private String register(String email) throws Exception {
-        String body = "{\"email\":\"" + email + "\",\"password\":\"password123\",\"firstName\":\"X\",\"lastName\":\"Y\"}";
-        MvcResult r = mvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON).content(body))
-                .andExpect(status().isOk()).andReturn();
-        return om.readTree(r.getResponse().getContentAsString()).at("/data/accessToken").asText();
+        return TestAuthHelper.registerAndGetToken(mvc, om, email, "password123", "X", "Y");
     }
 
     @Test

@@ -41,11 +41,7 @@ class MediaUploadIntegrationTest {
     }
 
     private String register() throws Exception {
-        MvcResult r = mvc.perform(post("/api/v1/auth/register")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"email\":\"media@test.com\",\"password\":\"password123\",\"firstName\":\"M\",\"lastName\":\"T\"}"))
-                .andExpect(status().isOk()).andReturn();
-        return om.readTree(r.getResponse().getContentAsString()).at("/data/accessToken").asText();
+        return TestAuthHelper.registerAndGetToken(mvc, om, "media@test.com", "password123", "M", "T");
     }
 
     @Test
