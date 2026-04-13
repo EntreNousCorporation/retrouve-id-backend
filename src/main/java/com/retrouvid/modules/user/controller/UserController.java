@@ -7,7 +7,9 @@ import com.retrouvid.modules.user.service.UserDataExportService;
 import com.retrouvid.security.CurrentUser;
 import com.retrouvid.shared.dto.ApiResponse;
 import com.retrouvid.shared.exception.ApiException;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -35,8 +37,9 @@ public class UserController {
         }
     }
 
-    public record UpdateProfileRequest(String firstName, String lastName, String profilePhotoUrl,
-                                       String city, Double latitude, Double longitude) {}
+    public record UpdateProfileRequest(String firstName, String lastName, String phone,
+                                       String profilePhotoUrl, String city,
+                                       Double latitude, Double longitude) {}
 
     @GetMapping("/me")
     public ApiResponse<UserDto> me() {
@@ -52,11 +55,39 @@ public class UserController {
                 .orElseThrow(() -> ApiException.unauthorized("Utilisateur introuvable"));
         if (req.firstName() != null) user.setFirstName(req.firstName());
         if (req.lastName() != null) user.setLastName(req.lastName());
+        if (req.phone() != null) {
+            String p = req.phone().isBlank() ? null : req.phone();
+            if (p != null && !p.equals(user.getPhone())
+                    && userRepository.existsByPhone(p)) {
+                throw ApiException.conflict("Téléphone déjà utilisé");
+            }
+            user.setPhone(p);
+        }
         if (req.profilePhotoUrl() != null) user.setProfilePhotoUrl(req.profilePhotoUrl());
         if (req.city() != null) user.setCity(req.city());
         if (req.latitude() != null) user.setLatitude(req.latitude());
         if (req.longitude() != null) user.setLongitude(req.longitude());
         return ApiResponse.ok(UserDto.from(user));
+    }
+
+    public record ChangePasswordRequest(
+            @NotBlank String currentPassword,
+            @Size(min = 8, max = 128) String newPassword) {}
+
+    @PostMapping("/me/change-password")
+    @Transactional
+    public ApiResponse<Void> changePassword(@Valid @RequestBody ChangePasswordRequest req) {
+        User user = userRepository.findById(CurrentUser.id())
+                .orElseThrow(() -> ApiException.unauthorized("Utilisateur introuvable"));
+        if (!passwordEncoder.matches(req.currentPassword(), user.getPasswordHash())) {
+            throw ApiException.unauthorized("Mot de passe actuel incorrect");
+        }
+        if (passwordEncoder.matches(req.newPassword(), user.getPasswordHash())) {
+            throw ApiException.badRequest("Le nouveau mot de passe doit être différent");
+        }
+        user.setPasswordHash(passwordEncoder.encode(req.newPassword()));
+        log.info("Password changed for userId={}", user.getId());
+        return ApiResponse.ok(null);
     }
 
     /**
