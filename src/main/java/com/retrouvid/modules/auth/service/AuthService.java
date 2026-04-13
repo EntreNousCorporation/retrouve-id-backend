@@ -3,6 +3,7 @@ package com.retrouvid.modules.auth.service;
 import com.retrouvid.modules.auth.dto.AuthResponse;
 import com.retrouvid.modules.auth.dto.LoginRequest;
 import com.retrouvid.modules.auth.dto.RegisterRequest;
+import com.retrouvid.modules.auth.dto.RegisterResponse;
 import com.retrouvid.modules.user.entity.Role;
 import com.retrouvid.modules.user.entity.User;
 import com.retrouvid.modules.user.repository.UserRepository;
@@ -25,7 +26,7 @@ public class AuthService {
     private final OtpService otpService;
 
     @Transactional
-    public AuthResponse register(RegisterRequest req) {
+    public RegisterResponse register(RegisterRequest req) {
         if ((req.email() == null || req.email().isBlank()) && (req.phone() == null || req.phone().isBlank())) {
             throw ApiException.badRequest("Email ou téléphone requis");
         }
@@ -48,6 +49,17 @@ public class AuthService {
         if (user.getEmail() != null && !user.getEmail().isBlank()) {
             otpService.sendEmailVerification(user);
         }
+        // Pas de tokens : l'utilisateur doit d'abord vérifier son email via
+        // /verify-otp. Sans cette étape, impossible d'obtenir un accessToken.
+        return new RegisterResponse(user.getId(), user.getEmail(), true);
+    }
+
+    /**
+     * Appelé par AuthController.verifyOtp : OtpService a déjà validé le code
+     * et marqué le user verified=true. On génère les tokens uniquement ici.
+     */
+    @Transactional(readOnly = true)
+    public AuthResponse issueTokensForVerifiedUser(User user) {
         return buildResponse(user);
     }
 
@@ -85,7 +97,7 @@ public class AuthService {
     }
 
     private AuthResponse buildResponse(User user) {
-        String access = tokenProvider.generateAccessToken(user.getId(), user.getRole().name());
+        String access = tokenProvider.generateAccessToken(user.getId(), user.getRole().name(), user.getFirstName());
         String refresh = tokenProvider.generateRefreshToken(user.getId());
         return new AuthResponse(user.getId(), user.getEmail(), user.getRole().name(), access, refresh);
     }

@@ -58,7 +58,7 @@ public class OtpService {
     }
 
     @Transactional
-    public void verifyEmail(String email, String code) {
+    public User verifyEmail(String email, String code) {
         if (email == null || email.isBlank() || code == null || code.isBlank()) {
             throw ApiException.badRequest("Email et code requis");
         }
@@ -79,6 +79,7 @@ public class OtpService {
         store.invalidate(user.getId(), OtpStore.Purpose.EMAIL_VERIFICATION);
         user.setVerified(true);
         log.info("Email vérifié pour {}", email);
+        return user;
     }
 
     private String sha256(String s) {

@@ -29,15 +29,17 @@ public class JwtTokenProvider {
         this.refreshDays = refreshDays;
     }
 
-    public String generateAccessToken(UUID userId, String role) {
-        return build(userId, role, "access", Instant.now().plus(accessMinutes, ChronoUnit.MINUTES));
+    public String generateAccessToken(UUID userId, String role, String firstName) {
+        return build(userId, role, firstName, "access",
+                Instant.now().plus(accessMinutes, ChronoUnit.MINUTES));
     }
 
     public String generateRefreshToken(UUID userId) {
-        return build(userId, null, "refresh", Instant.now().plus(refreshDays, ChronoUnit.DAYS));
+        return build(userId, null, null, "refresh",
+                Instant.now().plus(refreshDays, ChronoUnit.DAYS));
     }
 
-    private String build(UUID userId, String role, String type, Instant expiry) {
+    private String build(UUID userId, String role, String firstName, String type, Instant expiry) {
         var builder = Jwts.builder()
                 .subject(userId.toString())
                 .claim("type", type)
@@ -45,6 +47,11 @@ public class JwtTokenProvider {
                 .expiration(Date.from(expiry))
                 .signWith(key);
         if (role != null) builder.claim("role", role);
+        if (firstName != null && !firstName.isBlank()) {
+            // "given_name" = claim standard OIDC pour le prénom, consommé par le mobile
+            // pour afficher l'accueil sans appel supplémentaire à /me.
+            builder.claim("given_name", firstName);
+        }
         return builder.compact();
     }
 

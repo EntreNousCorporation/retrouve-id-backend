@@ -4,6 +4,8 @@ import com.retrouvid.modules.auth.dto.AuthResponse;
 import com.retrouvid.modules.auth.dto.LoginRequest;
 import com.retrouvid.modules.auth.dto.RefreshRequest;
 import com.retrouvid.modules.auth.dto.RegisterRequest;
+import com.retrouvid.modules.auth.dto.RegisterResponse;
+import com.retrouvid.modules.user.entity.User;
 import com.retrouvid.modules.auth.service.AuthService;
 import com.retrouvid.modules.auth.service.OtpService;
 import com.retrouvid.modules.auth.service.PasswordResetService;
@@ -35,7 +37,7 @@ public class AuthController {
     private boolean exposeToken;
 
     @PostMapping("/register")
-    public ApiResponse<AuthResponse> register(@Valid @RequestBody RegisterRequest req) {
+    public ApiResponse<RegisterResponse> register(@Valid @RequestBody RegisterRequest req) {
         return ApiResponse.ok(authService.register(req));
     }
 
@@ -81,8 +83,8 @@ public class AuthController {
     }
 
     @PostMapping("/verify-otp")
-    public ApiResponse<Void> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
-        otpService.verifyEmail(req.email(), req.code());
-        return ApiResponse.ok(null);
+    public ApiResponse<AuthResponse> verifyOtp(@Valid @RequestBody VerifyOtpRequest req) {
+        User user = otpService.verifyEmail(req.email(), req.code());
+        return ApiResponse.ok(authService.issueTokensForVerifiedUser(user));
     }
 }
