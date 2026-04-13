@@ -34,7 +34,7 @@ class AdminIntegrationTest {
                 .email("admin@test.com")
                 .passwordHash(encoder.encode("password123"))
                 .role(Role.ADMIN).verified(true).build());
-        String token = tokenProvider.generateAccessToken(admin.getId(), "ADMIN");
+        String token = tokenProvider.generateAccessToken(admin.getId(), "ADMIN", null);
 
         mvc.perform(get("/api/v1/admin/dashboard")
                         .header("Authorization", "Bearer " + token))
@@ -56,7 +56,7 @@ class AdminIntegrationTest {
                 .email("user@test.com")
                 .passwordHash(encoder.encode("password123"))
                 .role(Role.USER).build());
-        String token = tokenProvider.generateAccessToken(user.getId(), "USER");
+        String token = tokenProvider.generateAccessToken(user.getId(), "USER", null);
 
         mvc.perform(get("/api/v1/admin/dashboard")
                         .header("Authorization", "Bearer " + token))
