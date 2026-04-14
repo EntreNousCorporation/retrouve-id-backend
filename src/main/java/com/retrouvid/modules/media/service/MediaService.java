@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Base64;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -44,21 +45,60 @@ public class MediaService {
     public MediaAsset upload(UUID ownerId, MultipartFile file, boolean blur) {
         if (file == null || file.isEmpty()) throw ApiException.badRequest("Fichier vide");
         if (file.getSize() > MAX_SIZE) throw ApiException.badRequest("Fichier trop volumineux (max 10 Mo)");
-        String type = file.getContentType();
+        try {
+            return store(ownerId, file.getBytes(), file.getContentType(), blur);
+        } catch (IOException e) {
+            throw ApiException.badRequest("Échec lecture fichier: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Upload via data URI base64 ("data:image/png;base64,...."). Pattern
+     * calqué sur pansy-backend : le mobile encode, le serveur décode et
+     * applique les mêmes contrôles que l'upload multipart.
+     */
+    @Transactional
+    public MediaAsset uploadBase64(UUID ownerId, String dataUri, boolean blur) {
+        if (dataUri == null || dataUri.isBlank()) {
+            throw ApiException.badRequest("Contenu vide");
+        }
+        String type;
+        String payload;
+        int comma = dataUri.indexOf(',');
+        if (dataUri.startsWith("data:") && comma > 0) {
+            String header = dataUri.substring(5, comma); // ex: image/png;base64
+            int semi = header.indexOf(';');
+            type = semi > 0 ? header.substring(0, semi) : header;
+            payload = dataUri.substring(comma + 1);
+        } else {
+            // Pas de préfixe data URI : on suppose du JPEG.
+            type = "image/jpeg";
+            payload = dataUri;
+        }
+        byte[] bytes;
+        try {
+            bytes = Base64.getDecoder().decode(payload);
+        } catch (IllegalArgumentException e) {
+            throw ApiException.badRequest("Base64 invalide");
+        }
+        if (bytes.length == 0) throw ApiException.badRequest("Fichier vide");
+        if (bytes.length > MAX_SIZE) throw ApiException.badRequest("Fichier trop volumineux (max 10 Mo)");
+        return store(ownerId, bytes, type, blur);
+    }
+
+    private MediaAsset store(UUID ownerId, byte[] original, String type, boolean blur) {
         if (type == null || !ALLOWED_TYPES.contains(type)) {
             throw ApiException.badRequest("Type non supporté (jpeg, png, webp)");
         }
         User owner = userRepository.findById(ownerId)
                 .orElseThrow(() -> ApiException.unauthorized("Utilisateur introuvable"));
-
         try {
-            byte[] original = file.getBytes();
             byte[] preview = blur ? blurService.buildPreview(original, type) : original;
 
             UUID id = UUID.randomUUID();
             Path base = Paths.get(storagePath);
             Files.createDirectories(base);
-            String ext = type.contains("png") ? ".png" : ".jpg";
+            String ext = type.contains("png") ? ".png" : type.contains("webp") ? ".webp" : ".jpg";
             Path originalPath = base.resolve(id + "-original" + ext);
             Path previewPath = base.resolve(id + "-preview" + ext);
             Files.write(originalPath, original);

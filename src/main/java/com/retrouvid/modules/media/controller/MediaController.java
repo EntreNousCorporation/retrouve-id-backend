@@ -4,7 +4,8 @@ import com.retrouvid.modules.media.entity.MediaAsset;
 import com.retrouvid.modules.media.service.MediaService;
 import com.retrouvid.security.CurrentUser;
 import com.retrouvid.shared.dto.ApiResponse;
-import com.retrouvid.shared.exception.ApiException;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -27,13 +28,28 @@ public class MediaController {
     public ApiResponse<UploadResponse> upload(
             @RequestPart("file") MultipartFile file,
             @RequestParam(value = "blur", defaultValue = "true") boolean blur) {
-        MediaAsset asset = mediaService.upload(CurrentUser.id(), file, blur);
-        return ApiResponse.ok(new UploadResponse(
+        return ApiResponse.ok(toResponse(mediaService.upload(CurrentUser.id(), file, blur)));
+    }
+
+    public record Base64UploadRequest(@NotBlank String base64, Boolean blur) {}
+
+    /**
+     * Upload via base64 data URI (ex: "data:image/png;base64,...."), aligné
+     * sur le pattern pansy-backend. Plus robuste côté mobile que le multipart.
+     */
+    @PostMapping(value = "/upload-base64", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ApiResponse<UploadResponse> uploadBase64(@Valid @RequestBody Base64UploadRequest req) {
+        boolean blur = req.blur() == null || req.blur();
+        return ApiResponse.ok(toResponse(mediaService.uploadBase64(CurrentUser.id(), req.base64(), blur)));
+    }
+
+    private UploadResponse toResponse(MediaAsset asset) {
+        return new UploadResponse(
                 asset.getId(),
                 "/api/v1/media/" + asset.getId() + "/preview",
                 "/api/v1/media/" + asset.getId() + "/original",
                 asset.getContentType(),
-                asset.getSizeBytes()));
+                asset.getSizeBytes());
     }
 
     @GetMapping("/{id}/preview")

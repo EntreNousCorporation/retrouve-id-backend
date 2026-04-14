@@ -3,6 +3,10 @@ spring:
     active: ${SPRING_PROFILES_ACTIVE:default}
   application:
     name: retrouvid-backend
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 20MB
   # Spring Boot autoconfig Redis refuse un host vide. On l'exclut par défaut
   # et on gère la création du bean nous-mêmes dans RedisConfig quand REDIS_HOST
   # est renseigné (cf. @ConditionalOnProperty).
@@ -47,6 +51,9 @@ server:
   port: ${SERVER_PORT:8080}
   servlet:
     context-path: /
+  tomcat:
+    max-http-form-post-size: 20MB
+    max-swallow-size: 20MB
 
 app:
   password-reset:
