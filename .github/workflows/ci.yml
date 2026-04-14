@@ -49,7 +49,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ghcr.io/${{ github.repository_owner }}/retrouvid-backend
+          images: ghcr.io/${{ github.repository_owner }}/api
           tags: |
             type=sha,format=short
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
@@ -78,7 +78,7 @@ jobs:
             set -euo pipefail
             cd /home/pansy/infra
             docker compose --env-file .env --env-file apps/retrouvid/.env \
-              -f apps/retrouvid/docker-compose.yml pull retrouvid-backend
+              -f apps/retrouvid/docker-compose.yml pull api
             docker compose --env-file .env --env-file apps/retrouvid/.env \
-              -f apps/retrouvid/docker-compose.yml up -d retrouvid-backend
+              -f apps/retrouvid/docker-compose.yml up -d api
             docker image prune -f
