@@ -62,9 +62,10 @@ class AuthFlowIntegrationTest {
 
     @Test
     void protectedEndpointRejectsUnauthenticatedRequest() throws Exception {
-        // Spring Security renvoie 403 par défaut quand aucune auth n'est fournie.
+        // Via HttpStatusEntryPoint (cf. SecurityConfig), l'absence d'auth
+        // renvoie 401 — le mobile peut déclencher son flux refresh/logout.
         mvc.perform(get("/api/v1/users/me"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

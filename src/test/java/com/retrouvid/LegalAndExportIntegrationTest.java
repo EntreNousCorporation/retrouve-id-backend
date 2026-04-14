@@ -70,6 +70,6 @@ class LegalAndExportIntegrationTest {
     @Test
     void exportMyData_requiresAuth() throws Exception {
         mvc.perform(get("/api/v1/users/me/export"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

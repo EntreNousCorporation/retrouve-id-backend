@@ -76,6 +76,6 @@ class AccountDeletionIntegrationTest {
         mvc.perform(delete("/api/v1/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"password\":\"anything\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }
