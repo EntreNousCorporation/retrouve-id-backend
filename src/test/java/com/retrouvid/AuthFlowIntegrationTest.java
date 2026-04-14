@@ -69,6 +69,14 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void myDeclarations_requiresAuth() throws Exception {
+        // /declarations/my capture l'ID du user courant ; sans token, on doit
+        // renvoyer 401 et non un 500 "Invalid UUID: anonymousUser".
+        mvc.perform(get("/api/v1/declarations/my"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     void jwtClaim_givenName_isPresentAfterOtpVerification() throws Exception {
         String email = "claire@test.com";
         String body = """

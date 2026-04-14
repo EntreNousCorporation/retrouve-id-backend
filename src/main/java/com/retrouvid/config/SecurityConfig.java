@@ -43,6 +43,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/legal/**").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/health").permitAll()
+                        // /my doit rester authentifié — sinon CurrentUser.id()
+                        // reçoit "anonymousUser" et casse avec Invalid UUID.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/declarations/my").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/v1/declarations", "/api/v1/declarations/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/media/*/preview").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
