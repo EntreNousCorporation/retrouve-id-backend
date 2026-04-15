@@ -96,7 +96,8 @@ public class AdminController {
         for (Object[] row : declarationRepository.countByDayAndType(since)) {
             java.time.Instant ts = ((java.sql.Timestamp) row[0]).toInstant();
             java.time.LocalDate day = ts.atZone(java.time.ZoneOffset.UTC).toLocalDate();
-            DeclarationType type = (DeclarationType) row[1];
+            // Requête native : la colonne `type` arrive comme String, pas comme enum.
+            DeclarationType type = DeclarationType.valueOf((String) row[1]);
             long total = ((Number) row[2]).longValue();
             long[] slot = bucket.get(day);
             if (slot == null) continue;
