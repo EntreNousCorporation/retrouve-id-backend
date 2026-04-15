@@ -131,6 +131,7 @@ public class AdminController {
     public record ModerateRequest(@jakarta.validation.constraints.NotNull DeclarationStatus status) {}
 
     @GetMapping("/declarations")
+    @Transactional(readOnly = true)
     public ApiResponse<PagedResponse<AdminDeclarationDto>> declarations(
             @RequestParam(required = false) DeclarationStatus status,
             @RequestParam(required = false) DeclarationType type,
