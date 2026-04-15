@@ -76,6 +76,40 @@ public class AdminController {
                 pending, confirmed, byType, byDoc));
     }
 
+    public record TimeseriesPoint(String date, long perte, long decouverte) {}
+
+    /// Évolution quotidienne des déclarations (PERTE / DECOUVERTE) sur la
+    /// fenêtre `days` (1 à 365). Les jours sans déclaration sont remplis
+    /// à 0 pour que la courbe côté UI ne fasse pas de trous.
+    @GetMapping("/dashboard/timeseries")
+    public ApiResponse<java.util.List<TimeseriesPoint>> timeseries(
+            @RequestParam(defaultValue = "30") int days) {
+        int window = Math.max(1, Math.min(days, 365));
+        java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneOffset.UTC);
+        java.time.LocalDate start = today.minusDays(window - 1L);
+        java.time.Instant since = start.atStartOfDay(java.time.ZoneOffset.UTC).toInstant();
+
+        java.util.Map<java.time.LocalDate, long[]> bucket = new java.util.LinkedHashMap<>();
+        for (int i = 0; i < window; i++) {
+            bucket.put(start.plusDays(i), new long[2]);
+        }
+        for (Object[] row : declarationRepository.countByDayAndType(since)) {
+            java.time.Instant ts = ((java.sql.Timestamp) row[0]).toInstant();
+            java.time.LocalDate day = ts.atZone(java.time.ZoneOffset.UTC).toLocalDate();
+            DeclarationType type = (DeclarationType) row[1];
+            long total = ((Number) row[2]).longValue();
+            long[] slot = bucket.get(day);
+            if (slot == null) continue;
+            if (type == DeclarationType.PERTE) slot[0] = total;
+            else if (type == DeclarationType.DECOUVERTE) slot[1] = total;
+        }
+        java.util.List<TimeseriesPoint> out = bucket.entrySet().stream()
+                .map(e -> new TimeseriesPoint(e.getKey().toString(),
+                        e.getValue()[0], e.getValue()[1]))
+                .toList();
+        return ApiResponse.ok(out);
+    }
+
     // ---------- Declarations moderation ----------
 
     public record AdminDeclarationDto(UUID id, UUID userId, String type, String documentType,

@@ -24,6 +24,19 @@ public interface DeclarationRepository extends JpaRepository<Declaration, UUID>,
     @Query("select d.documentType, count(d) from Declaration d group by d.documentType")
     List<Object[]> countGroupByDocumentType();
 
+    /// Compte les déclarations créées après `since` groupées par jour (UTC)
+    /// et par type. Utilisé par le dashboard pour la courbe d'évolution.
+    @Query(value = """
+        SELECT date_trunc('day', created_at) AS day,
+               type,
+               COUNT(*) AS total
+        FROM declarations
+        WHERE created_at >= :since
+        GROUP BY 1, 2
+        ORDER BY 1
+        """, nativeQuery = true)
+    List<Object[]> countByDayAndType(@org.springframework.data.repository.query.Param("since") java.time.Instant since);
+
     @Query(value = """
         SELECT *
         FROM declarations d
