@@ -115,12 +115,16 @@ public class AdminController {
 
     public record AdminDeclarationDto(UUID id, UUID userId, String type, String documentType,
                                       String ownerName, String city, String status,
-                                      Instant createdAt, Instant expiresAt) {
+                                      Instant createdAt, Instant expiresAt,
+                                      String authorFirstName, String authorLastName,
+                                      String authorEmail, String authorPhone) {
         static AdminDeclarationDto from(Declaration d) {
-            return new AdminDeclarationDto(d.getId(), d.getUser().getId(),
+            var u = d.getUser();
+            return new AdminDeclarationDto(d.getId(), u.getId(),
                     d.getType().name(), d.getDocumentType().name(),
                     d.getOwnerName(), d.getCity(), d.getStatus().name(),
-                    d.getCreatedAt(), d.getExpiresAt());
+                    d.getCreatedAt(), d.getExpiresAt(),
+                    u.getFirstName(), u.getLastName(), u.getEmail(), u.getPhone());
         }
     }
 
