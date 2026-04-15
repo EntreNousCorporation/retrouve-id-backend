@@ -32,4 +32,15 @@ public interface MatchRepository extends JpaRepository<Match, UUID> {
     List<Match> findByStatus(MatchStatus status);
 
     long countByStatus(MatchStatus status);
+
+    /// Score du meilleur match pour une déclaration (côté perte ou
+    /// découverte). Renvoie une liste de [declarationId, maxScore] pour
+    /// éviter le N+1 quand on hydrate une page de déclarations.
+    @Query("""
+        SELECT d.id, MAX(m.score) FROM Match m
+        JOIN Declaration d ON d.id = m.declarationPerte.id OR d.id = m.declarationDecouverte.id
+        WHERE d.id IN :declarationIds
+        GROUP BY d.id
+    """)
+    List<Object[]> bestScoresFor(@Param("declarationIds") List<UUID> declarationIds);
 }

@@ -117,14 +117,16 @@ public class AdminController {
                                       String ownerName, String city, String status,
                                       Instant createdAt, Instant expiresAt,
                                       String authorFirstName, String authorLastName,
-                                      String authorEmail, String authorPhone) {
-        static AdminDeclarationDto from(Declaration d) {
+                                      String authorEmail, String authorPhone,
+                                      Double bestMatchScore) {
+        static AdminDeclarationDto from(Declaration d, Double bestMatchScore) {
             var u = d.getUser();
             return new AdminDeclarationDto(d.getId(), u.getId(),
                     d.getType().name(), d.getDocumentType().name(),
                     d.getOwnerName(), d.getCity(), d.getStatus().name(),
                     d.getCreatedAt(), d.getExpiresAt(),
-                    u.getFirstName(), u.getLastName(), u.getEmail(), u.getPhone());
+                    u.getFirstName(), u.getLastName(), u.getEmail(), u.getPhone(),
+                    bestMatchScore);
         }
     }
 
@@ -149,8 +151,17 @@ public class AdminController {
                     cb.like(cb.lower(r.get("ownerName")), like),
                     cb.like(cb.lower(r.get("city")), like)));
         }
-        var page = declarationRepository.findAll(spec, pageable).map(AdminDeclarationDto::from);
-        return ApiResponse.ok(PagedResponse.of(page));
+        var page = declarationRepository.findAll(spec, pageable);
+        // Charge en une seule requête le meilleur score par déclaration (évite N+1).
+        var ids = page.getContent().stream().map(Declaration::getId).toList();
+        java.util.Map<UUID, Double> scoreByDecl = ids.isEmpty()
+                ? java.util.Map.of()
+                : matchRepository.bestScoresFor(ids).stream().collect(
+                        java.util.stream.Collectors.toMap(
+                                row -> (UUID) row[0],
+                                row -> ((Number) row[1]).doubleValue()));
+        var dtoPage = page.map(d -> AdminDeclarationDto.from(d, scoreByDecl.get(d.getId())));
+        return ApiResponse.ok(PagedResponse.of(dtoPage));
     }
 
     @PatchMapping("/declarations/{id}/moderate")
@@ -160,7 +171,12 @@ public class AdminController {
         Declaration d = declarationRepository.findById(id)
                 .orElseThrow(() -> ApiException.notFound("Déclaration introuvable"));
         d.setStatus(req.status());
-        return ApiResponse.ok(AdminDeclarationDto.from(d));
+        Double bestScore = matchRepository.bestScoresFor(java.util.List.of(d.getId()))
+                .stream()
+                .findFirst()
+                .map(row -> ((Number) row[1]).doubleValue())
+                .orElse(null);
+        return ApiResponse.ok(AdminDeclarationDto.from(d, bestScore));
     }
 
     // ---------- Users ----------
