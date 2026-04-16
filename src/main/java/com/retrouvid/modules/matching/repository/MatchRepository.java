@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -15,6 +16,10 @@ import java.util.UUID;
 public interface MatchRepository extends JpaRepository<Match, UUID> {
 
     Optional<Match> findByDeclarationPerteIdAndDeclarationDecouverteId(UUID perteId, UUID decouverteId);
+
+    List<Match> findByStatusAndHandoverDeadlineBefore(MatchStatus status, Instant threshold);
+
+    List<Match> findByStatusAndCodeExpiresAtBefore(MatchStatus status, Instant threshold);
 
     @Query("""
         SELECT m FROM Match m

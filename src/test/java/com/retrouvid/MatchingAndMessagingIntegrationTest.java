@@ -33,7 +33,7 @@ class MatchingAndMessagingIntegrationTest {
         String tTrouve = register("finder@test.com");
 
         String perteBody = """
-                {"type":"PERTE","documentType":"CNI","ownerName":"Jean Dupont","city":"Abidjan","latitude":5.32,"longitude":-4.03,"dateEvent":"2026-04-01"}
+                {"type":"PERTE","documentType":"CNI","ownerName":"Jean Dupont","documentNumberFull":"CI1234567890","dateOfBirth":"1990-05-12","city":"Abidjan","latitude":5.32,"longitude":-4.03,"dateEvent":"2026-04-01"}
                 """;
         mvc.perform(post("/api/v1/declarations")
                         .header("Authorization", "Bearer " + tPerte)
@@ -41,7 +41,7 @@ class MatchingAndMessagingIntegrationTest {
                 .andExpect(status().isOk());
 
         String trouveBody = """
-                {"type":"DECOUVERTE","documentType":"CNI","ownerName":"Jean Dupond","city":"Abidjan","latitude":5.33,"longitude":-4.02,"dateEvent":"2026-04-02"}
+                {"type":"DECOUVERTE","documentType":"CNI","ownerName":"Jean Dupond","documentNumberFull":"CI1234567890","dateOfBirth":"1990-05-12","city":"Abidjan","latitude":5.33,"longitude":-4.02,"dateEvent":"2026-04-02"}
                 """;
         mvc.perform(post("/api/v1/declarations")
                         .header("Authorization", "Bearer " + tTrouve)
