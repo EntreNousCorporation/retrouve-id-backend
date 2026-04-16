@@ -37,6 +37,15 @@ public class Declaration {
     @Column(name = "document_number_partial")
     private String documentNumberPartial;
 
+    @Column(name = "document_number_hash", length = 128)
+    private String documentNumberHash;
+
+    @Column(name = "dob_hash", length = 128)
+    private String dobHash;
+
+    @Column(name = "discriminant_hint", length = 160)
+    private String discriminantHint;
+
     @Column(name = "owner_name")
     private String ownerName;
 

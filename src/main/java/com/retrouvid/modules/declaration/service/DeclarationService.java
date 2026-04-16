@@ -10,6 +10,7 @@ import com.retrouvid.modules.matching.service.MatchingService;
 import com.retrouvid.modules.user.entity.User;
 import com.retrouvid.modules.user.repository.UserRepository;
 import com.retrouvid.shared.exception.ApiException;
+import com.retrouvid.shared.hashing.HashingService;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -29,6 +30,7 @@ public class DeclarationService {
     private final DeclarationRepository declarationRepository;
     private final UserRepository userRepository;
     private final MatchingService matchingService;
+    private final HashingService hashingService;
 
     @Transactional
     public Declaration create(UUID userId, DeclarationRequest req) {
@@ -39,6 +41,9 @@ public class DeclarationService {
                 .type(req.type())
                 .documentType(req.documentType())
                 .documentNumberPartial(req.documentNumberPartial())
+                .documentNumberHash(hashingService.hash(req.documentNumberFull()))
+                .dobHash(req.dateOfBirth() == null ? null : hashingService.hash(req.dateOfBirth().toString()))
+                .discriminantHint(req.discriminantHint())
                 .ownerName(req.ownerName())
                 .description(req.description())
                 .photoUrl(req.photoUrl())
@@ -69,6 +74,15 @@ public class DeclarationService {
         d.setType(req.type());
         d.setDocumentType(req.documentType());
         d.setDocumentNumberPartial(req.documentNumberPartial());
+        if (req.documentNumberFull() != null && !req.documentNumberFull().isBlank()) {
+            d.setDocumentNumberHash(hashingService.hash(req.documentNumberFull()));
+        }
+        if (req.dateOfBirth() != null) {
+            d.setDobHash(hashingService.hash(req.dateOfBirth().toString()));
+        }
+        if (req.discriminantHint() != null) {
+            d.setDiscriminantHint(req.discriminantHint());
+        }
         d.setOwnerName(req.ownerName());
         d.setDescription(req.description());
         d.setPhotoUrl(req.photoUrl());
