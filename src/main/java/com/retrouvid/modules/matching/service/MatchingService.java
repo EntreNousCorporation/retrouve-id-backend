@@ -2,6 +2,7 @@ package com.retrouvid.modules.matching.service;
 
 import com.retrouvid.modules.admin.entity.RelayPoint;
 import com.retrouvid.modules.admin.repository.RelayPointRepository;
+import com.retrouvid.modules.gamification.service.GamificationService;
 import com.retrouvid.modules.declaration.entity.Declaration;
 import com.retrouvid.modules.declaration.entity.DeclarationStatus;
 import com.retrouvid.modules.declaration.entity.DeclarationType;
@@ -53,6 +54,7 @@ public class MatchingService {
     private final NotificationService notificationService;
     private final NotificationChannelRouter channelRouter;
     private final HashingService hashingService;
+    private final GamificationService gamificationService;
 
     @Transactional
     public List<Match> computeForDeclaration(Declaration source) {
@@ -234,6 +236,8 @@ public class MatchingService {
         m.setPickupLockedUntil(null);
         m.getDeclarationPerte().setStatus(DeclarationStatus.RESTITUTED);
         m.getDeclarationDecouverte().setStatus(DeclarationStatus.RESTITUTED);
+
+        gamificationService.onRestitution(m);
 
         User owner = m.getDeclarationPerte().getUser();
         String title = "Pièce récupérée";

@@ -49,6 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/v1/declarations", "/api/v1/declarations/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/media/*/preview").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/relay-points/nearby").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/gamification/users/*").permitAll()
                         .requestMatchers("/api/v1/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
